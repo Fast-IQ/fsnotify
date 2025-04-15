@@ -66,7 +66,7 @@ func (w *readDirChangesW) sendEvent(name, renamedFrom string, mask uint64) bool 
 	}
 
 	event := w.newEvent(name, uint32(mask))
-	event.renamedFrom = renamedFrom
+	event.RenamedFrom = renamedFrom
 	select {
 	case ch := <-w.done:
 		w.done <- ch

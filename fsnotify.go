@@ -166,7 +166,7 @@ type Event struct {
 	//
 	//   Event{Op: Rename, Name: "/tmp/file"}
 	//   Event{Op: Create, Name: "/tmp/rename", RenamedFrom: "/tmp/file"}
-	renamedFrom string
+	RenamedFrom string
 }
 
 // Op describes a set of file operations.
@@ -391,8 +391,8 @@ func (e Event) Has(op Op) bool { return e.Op.Has(op) }
 
 // String returns a string representation of the event with their path.
 func (e Event) String() string {
-	if e.renamedFrom != "" {
-		return fmt.Sprintf("%-13s %q ← %q", e.Op.String(), e.Name, e.renamedFrom)
+	if e.RenamedFrom != "" {
+		return fmt.Sprintf("%-13s %q ← %q", e.Op.String(), e.Name, e.RenamedFrom)
 	}
 	return fmt.Sprintf("%-13s %q", e.Op.String(), e.Name)
 }

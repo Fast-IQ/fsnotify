@@ -456,8 +456,8 @@ func (e Events) String() string {
 		if i > 0 {
 			b.WriteString("\n")
 		}
-		if ee.renamedFrom != "" {
-			fmt.Fprintf(b, "%-8s %s ← %s", ee.Op.String(), filepath.ToSlash(ee.Name), filepath.ToSlash(ee.renamedFrom))
+		if ee.RenamedFrom != "" {
+			fmt.Fprintf(b, "%-8s %s ← %s", ee.Op.String(), filepath.ToSlash(ee.Name), filepath.ToSlash(ee.RenamedFrom))
 		} else {
 			fmt.Fprintf(b, "%-8s %s", ee.Op.String(), filepath.ToSlash(ee.Name))
 		}
@@ -472,10 +472,10 @@ func (e Events) TrimPrefix(prefix string) Events {
 		} else {
 			e[i].Name = strings.TrimPrefix(e[i].Name, prefix)
 		}
-		if e[i].renamedFrom == prefix {
-			e[i].renamedFrom = "/"
+		if e[i].RenamedFrom == prefix {
+			e[i].RenamedFrom = "/"
 		} else {
-			e[i].renamedFrom = strings.TrimPrefix(e[i].renamedFrom, prefix)
+			e[i].RenamedFrom = strings.TrimPrefix(e[i].RenamedFrom, prefix)
 		}
 	}
 	return e
@@ -580,7 +580,7 @@ func newEvents(t *testing.T, s string) Events {
 		}
 
 		for _, g := range groups {
-			events[g] = append(events[g], Event{Name: strings.Trim(fields[1], `"`), renamedFrom: from, Op: op})
+			events[g] = append(events[g], Event{Name: strings.Trim(fields[1], `"`), RenamedFrom: from, Op: op})
 		}
 	}
 
