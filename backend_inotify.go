@@ -14,7 +14,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/fsnotify/fsnotify/internal"
+	"github.com/peptoneltd/fsnotify/internal"
 	"golang.org/x/sys/unix"
 )
 
