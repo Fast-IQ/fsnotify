@@ -4,7 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dobrac/fsnotify"
+	"github.com/Fast-IQ/fsnotify"
 )
 
 // Watch one or more files, but instead of watching the file directly it watches
@@ -20,7 +20,7 @@ func file(files ...string) {
 	if err != nil {
 		exit("creating a new watcher: %s", err)
 	}
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	// Start listening for events.
 	go fileLoop(w, files)

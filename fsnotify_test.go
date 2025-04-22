@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dobrac/fsnotify/internal"
+	"github.com/Fast-IQ/fsnotify/internal"
 )
 
 // Set soft open file limit to the maximum; on e.g. OpenBSD it's 512/1024.
@@ -100,7 +100,7 @@ func TestWatchRemoveOpenFd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer fp.Close()
+	defer func() { _ = fp.Close() }()
 
 	addWatch(t, w.w, tmp, "/file")
 	rm(t, tmp, "/file")
@@ -227,7 +227,7 @@ func TestClose(t *testing.T) {
 
 		var done int32
 		go func() {
-			w.Close()
+			_ = w.Close()
 			atomic.StoreInt32(&done, 1)
 		}()
 
@@ -325,9 +325,9 @@ func TestClose(t *testing.T) {
 					}
 					t.Fatal(err)
 				}
-				go w.Close()
-				go w.Close()
-				go w.Close()
+				go func() { _ = w.Close() }()
+				go func() { _ = w.Close() }()
+				go func() { _ = w.Close() }()
 			}
 		})
 		t.Run("buffered=4096", func(t *testing.T) {
@@ -342,9 +342,9 @@ func TestClose(t *testing.T) {
 					}
 					t.Fatal(err)
 				}
-				go w.Close()
-				go w.Close()
-				go w.Close()
+				go func() { _ = w.Close() }()
+				go func() { _ = w.Close() }()
+				go func() { _ = w.Close() }()
 			}
 		})
 	})
@@ -436,7 +436,7 @@ func TestAdd(t *testing.T) {
 
 		w := newWatcher(t)
 		defer func() {
-			w.Close()
+			_ = w.Close()
 			chmod(t, 0o755, dir) // Make TempDir() cleanup work
 		}()
 		err := w.Add(dir)
@@ -504,7 +504,7 @@ func TestRemove(t *testing.T) {
 		touch(t, tmp, "file")
 
 		w := newWatcher(t)
-		defer w.Close()
+		defer func() { _ = w.Close() }()
 
 		addWatch(t, w, tmp)
 
@@ -529,21 +529,21 @@ func TestRemove(t *testing.T) {
 
 		for i := 0; i < 10; i++ {
 			w := newWatcher(t)
-			defer w.Close()
+			defer func() { _ = w.Close() }()
 			addWatch(t, w, tmp)
 
 			done := make(chan struct{})
 			go func() {
 				defer func() { done <- struct{}{} }()
-				w.Remove(tmp)
+				_ = w.Remove(tmp)
 			}()
 			go func() {
 				defer func() { done <- struct{}{} }()
-				w.Remove(tmp)
+				_ = w.Remove(tmp)
 			}()
 			<-done
 			<-done
-			w.Close()
+			_ = w.Close()
 		}
 	})
 
@@ -552,7 +552,7 @@ func TestRemove(t *testing.T) {
 	// regression test for #42 see https://gist.github.com/timshannon/603f92824c5294269797
 	t.Run("", func(t *testing.T) {
 		w := newWatcher(t)
-		defer w.Close()
+		defer func() { _ = w.Close() }()
 
 		// consume the events
 		var werr error
@@ -586,7 +586,7 @@ func TestRemove(t *testing.T) {
 			t.Errorf("Expected a PathError, got %v", err)
 		}
 
-		w.Close()
+		_ = w.Close()
 		wg.Wait()
 
 		if werr != nil {
@@ -650,7 +650,7 @@ func TestWatchList(t *testing.T) {
 	touch(t, other)
 
 	w := newWatcher(t, file, tmp)
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	have := w.WatchList()
 	sort.Strings(have)
@@ -832,10 +832,10 @@ func TestRemoveRace(t *testing.T) {
 
 	dir := join(tmp, "/dir")
 	for i := 0; i < 100; i++ {
-		go os.MkdirAll(dir, 0o0755)
-		go os.RemoveAll(dir)
-		go w.w.Add(dir)
-		go w.w.Remove(dir)
+		go func() { _ = os.MkdirAll(dir, 0o0755) }()
+		go func() { _ = os.RemoveAll(dir) }()
+		go func() { _ = w.w.Add(dir) }()
+		go func() { _ = w.w.Remove(dir) }()
 	}
 	time.Sleep(100 * time.Millisecond)
 	w.stop(t)

@@ -1,3 +1,7 @@
+# IDE tool cache
+.idea/*
+.vscode/*
+
 # go test -c output
 *.test
 *.test.exe

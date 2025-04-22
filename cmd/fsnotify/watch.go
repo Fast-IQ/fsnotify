@@ -1,6 +1,6 @@
 package main
 
-import "github.com/dobrac/fsnotify"
+import "github.com/Fast-IQ/fsnotify"
 
 // This is the most basic example: it prints events to the terminal as we
 // receive them.
@@ -14,7 +14,7 @@ func watch(paths ...string) {
 	if err != nil {
 		exit("creating a new watcher: %s", err)
 	}
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	// Start listening for events.
 	go watchLoop(w)

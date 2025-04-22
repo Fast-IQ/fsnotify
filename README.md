@@ -34,7 +34,7 @@ package main
 import (
     "log"
 
-    "github.com/dobrac/fsnotify"
+    "github.com/Fast-IQ/fsnotify"
 )
 
 func main() {

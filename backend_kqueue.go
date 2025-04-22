@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dobrac/fsnotify/internal"
+	"github.com/Fast-IQ/fsnotify/internal"
 	"golang.org/x/sys/unix"
 )
 

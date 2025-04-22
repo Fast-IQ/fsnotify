@@ -1,10 +1,9 @@
-module github.com/dobrac/fsnotify
+module github.com/Fast-IQ/fsnotify
 
-go 1.17
+go 1.23.0
 
-require golang.org/x/sys v0.13.0
+toolchain go1.23.4
 
-retract (
-	v1.5.3 // Published an incorrect branch accidentally https://github.com/fsnotify/fsnotify/issues/445
-	v1.5.0 // Contains symlink regression https://github.com/fsnotify/fsnotify/pull/394
+require (
+	golang.org/x/sys v0.32.0
 )

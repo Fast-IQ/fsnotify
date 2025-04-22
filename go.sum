@@ -1,2 +1,4 @@
-golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
-golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+github.com/dobrac/fsnotify v0.0.0-20241203211206-5573c140b6fb h1:Wc2bIDLjRqC65u5DKsWnv9fkPYM+iOu5hHx4lID7W2o=
+github.com/dobrac/fsnotify v0.0.0-20241203211206-5573c140b6fb/go.mod h1:i5fXvS/NRlvaj4QIKp37TDVcc1Iw8YAMX/AF/Qqmm4c=
+golang.org/x/sys v0.32.0 h1:s77OFDvIQeibCmezSnk/q6iAfkdiQaJi4VzroCFrN20=
+golang.org/x/sys v0.32.0/go.mod h1:BJP2sWEmIv4KK5OTEluFJCKSidICx8ciO85XgH3Ak8k=

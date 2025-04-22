@@ -18,7 +18,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dobrac/fsnotify/internal"
+	"github.com/Fast-IQ/fsnotify/internal"
 	"golang.org/x/sys/windows"
 )
 
@@ -68,7 +68,7 @@ func (w *readDirChangesW) sendEvent(name, renamedFrom string, mask uint64) bool 
 	}
 
 	event := w.newEvent(name, uint32(mask))
-	event.renamedFrom = renamedFrom
+	event.RenamedFrom = renamedFrom
 	select {
 	case ch := <-w.quit:
 		w.quit <- ch
@@ -115,7 +115,7 @@ func (w *readDirChangesW) AddWith(name string, opts ...addOpt) error {
 		return ErrClosed
 	}
 	if debug {
-		fmt.Fprintf(os.Stderr, "FSNOTIFY_DEBUG: %s  AddWith(%q)\n",
+		_, _ = fmt.Fprintf(os.Stderr, "FSNOTIFY_DEBUG: %s  AddWith(%q)\n",
 			time.Now().Format("15:04:05.000000000"), filepath.ToSlash(name))
 	}
 
@@ -146,7 +146,7 @@ func (w *readDirChangesW) Remove(name string) error {
 		return nil
 	}
 	if debug {
-		fmt.Fprintf(os.Stderr, "FSNOTIFY_DEBUG: %s  Remove(%q)\n",
+		_, _ = fmt.Fprintf(os.Stderr, "FSNOTIFY_DEBUG: %s  Remove(%q)\n",
 			time.Now().Format("15:04:05.000000000"), filepath.ToSlash(name))
 	}
 
@@ -296,7 +296,7 @@ func (w *readDirChangesW) getIno(path string) (ino *inode, err error) {
 	var fi windows.ByHandleFileInformation
 	err = windows.GetFileInformationByHandle(h, &fi)
 	if err != nil {
-		windows.CloseHandle(h)
+		_ = windows.CloseHandle(h)
 		return nil, os.NewSyscallError("GetFileInformationByHandle", err)
 	}
 	ino = &inode{
@@ -344,7 +344,7 @@ func (w *readDirChangesW) addWatch(pathname string, flags uint64, bufsize int) e
 	if watchEntry == nil {
 		_, err := windows.CreateIoCompletionPort(ino.handle, w.port, 0, 0)
 		if err != nil {
-			windows.CloseHandle(ino.handle)
+			_ = windows.CloseHandle(ino.handle)
 			return os.NewSyscallError("CreateIoCompletionPort", err)
 		}
 		watchEntry = &watch{
@@ -359,7 +359,7 @@ func (w *readDirChangesW) addWatch(pathname string, flags uint64, bufsize int) e
 		w.mu.Unlock()
 		flags |= provisional
 	} else {
-		windows.CloseHandle(ino.handle)
+		_ = windows.CloseHandle(ino.handle)
 	}
 	if pathname == dir {
 		watchEntry.mask |= flags
@@ -471,7 +471,7 @@ func (w *readDirChangesW) startRead(watch *watch) error {
 			err = nil
 		}
 		w.deleteWatch(watch)
-		w.startRead(watch)
+		_ = w.startRead(watch)
 		return err
 	}
 	return nil
@@ -505,7 +505,7 @@ func (w *readDirChangesW) readEvents() {
 				for _, index := range indexes {
 					for _, watch := range index {
 						w.deleteWatch(watch)
-						w.startRead(watch)
+						_ = w.startRead(watch)
 					}
 				}
 
@@ -545,7 +545,7 @@ func (w *readDirChangesW) readEvents() {
 			// Watched directory was probably removed
 			w.sendEvent(watch.path, "", watch.mask&sysFSDELETESELF)
 			w.deleteWatch(watch)
-			w.startRead(watch)
+			_ = w.startRead(watch)
 			continue
 		case windows.ERROR_OPERATION_ABORTED:
 			// CancelIo was called on this handle

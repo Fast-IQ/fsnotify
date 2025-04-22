@@ -14,7 +14,7 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/dobrac/fsnotify/internal"
+	"github.com/Fast-IQ/fsnotify/internal"
 	"golang.org/x/sys/unix"
 )
 
@@ -661,7 +661,7 @@ func (w *inotify) newEvent(name string, mask, cookie uint32) Event {
 				}
 			}
 			w.cookiesMu.Unlock()
-			e.renamedFrom = prev
+			e.RenamedFrom = prev
 		}
 	}
 	return e

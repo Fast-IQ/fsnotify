@@ -13,8 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dobrac/fsnotify/internal"
-	"github.com/dobrac/fsnotify/internal/ztest"
+	"github.com/Fast-IQ/fsnotify/internal"
+	"github.com/Fast-IQ/fsnotify/internal/ztest"
 )
 
 // We wait a little bit after most commands; gives the system some time to sync
@@ -456,10 +456,10 @@ func (e Events) String() string {
 		if i > 0 {
 			b.WriteString("\n")
 		}
-		if ee.renamedFrom != "" {
-			fmt.Fprintf(b, "%-8s %s ← %s", ee.Op.String(), filepath.ToSlash(ee.Name), filepath.ToSlash(ee.renamedFrom))
+		if ee.RenamedFrom != "" {
+			_, _ = fmt.Fprintf(b, "%-8s %s ← %s", ee.Op.String(), filepath.ToSlash(ee.Name), filepath.ToSlash(ee.RenamedFrom))
 		} else {
-			fmt.Fprintf(b, "%-8s %s", ee.Op.String(), filepath.ToSlash(ee.Name))
+			_, _ = fmt.Fprintf(b, "%-8s %s", ee.Op.String(), filepath.ToSlash(ee.Name))
 		}
 	}
 	return b.String()
@@ -472,10 +472,10 @@ func (e Events) TrimPrefix(prefix string) Events {
 		} else {
 			e[i].Name = strings.TrimPrefix(e[i].Name, prefix)
 		}
-		if e[i].renamedFrom == prefix {
-			e[i].renamedFrom = "/"
+		if e[i].RenamedFrom == prefix {
+			e[i].RenamedFrom = "/"
 		} else {
-			e[i].renamedFrom = strings.TrimPrefix(e[i].renamedFrom, prefix)
+			e[i].RenamedFrom = strings.TrimPrefix(e[i].RenamedFrom, prefix)
 		}
 	}
 	return e
@@ -580,7 +580,7 @@ func newEvents(t *testing.T, s string) Events {
 		}
 
 		for _, g := range groups {
-			events[g] = append(events[g], Event{Name: strings.Trim(fields[1], `"`), renamedFrom: from, Op: op})
+			events[g] = append(events[g], Event{Name: strings.Trim(fields[1], `"`), RenamedFrom: from, Op: op})
 		}
 	}
 

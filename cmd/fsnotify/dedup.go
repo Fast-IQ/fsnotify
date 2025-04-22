@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/dobrac/fsnotify"
+	"github.com/Fast-IQ/fsnotify"
 )
 
 // Depending on the system, a single "write" can generate many Write events; for
@@ -24,7 +24,7 @@ func dedup(paths ...string) {
 	if err != nil {
 		exit("creating a new watcher: %s", err)
 	}
-	defer w.Close()
+	defer func() { _ = w.Close() }()
 
 	// Start listening for events.
 	go dedupLoop(w)
