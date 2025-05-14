@@ -432,7 +432,7 @@ func (w *eventCollector) collect(t *testing.T) {
 					w.done <- struct{}{}
 					return
 				}
-				t.Error(e)
+				t.Errorf("eventCollector: unexpected error on Errors chan: %s", e)
 				w.done <- struct{}{}
 				return
 			case e, ok := <-w.w.Events:
@@ -840,9 +840,14 @@ loop:
 			default:
 				t.Fatalf("line %d: unknown %s reason: %q", c.line, c.cmd, c.args[0])
 			}
-		//case "state":
-		//	mustArg(c, 0)
-		//	do = append(do, func() { eventSeparator(); fmt.Fprintln(os.Stderr); w.w.state(); fmt.Fprintln(os.Stderr) })
+		case "state":
+			mustArg(c, 0)
+			do = append(do, func() {
+				eventSeparator()
+				_, _ = fmt.Fprintln(os.Stderr)
+				w.w.b.(interface{ state() }).state()
+				_, _ = fmt.Fprintln(os.Stderr)
+			})
 		case "debug":
 			mustArg(c, 1)
 			switch c.args[0] {
@@ -909,6 +914,8 @@ loop:
 					t.Fatalf("line %d: addWatch(%q): %s", c.line+1, p, err)
 				}
 			})
+		case "print":
+			do = append(do, func() { fmt.Println(strings.Join(c.args, " ")) })
 		case "unwatch":
 			mustArg(c, 1)
 			do = append(do, func() { rmWatch(t, w.w, tmppath(tmp, c.args[0])) })

@@ -8,9 +8,9 @@ Platform support:
 | Backend               | OS         | Status                                                                    |
 | :-------------------- | :--------- |:--------------------------------------------------------------------------|
 | inotify               | Linux      | Supported                                                                 |
-| kqueue                | BSD, macOS | [Not Yet](https://github.com/fsnotify/fsnotify/issues/18)                                                                 |
+| kqueue                | BSD, macOS | Supported                                                                 |
 | ReadDirectoryChangesW | Windows    | Supported                                                                 |
-| FEN                   | illumos    | [Not Yet](https://github.com/fsnotify/fsnotify/issues/18)                 |
+| FEN                   | illumos    | Supported                                                                 |
 | fanotify              | Linux 5.9+ | [Not yet](https://github.com/fsnotify/fsnotify/issues/114)                |
 | AHAFS                 | AIX        | [aix branch]; experimental due to lack of maintainer and test environment |
 | FSEvents              | macOS      | [Needs support in x/sys/unix][fsevents]                                   |

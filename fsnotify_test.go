@@ -100,7 +100,7 @@ func TestWatchRemoveOpenFd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = fp.Close() }()
+	defer func() { _ = fp.Close()}()
 
 	addWatch(t, w.w, tmp, "/file")
 	rm(t, tmp, "/file")
@@ -422,11 +422,10 @@ func TestAdd(t *testing.T) {
 	})
 
 	t.Run("permission denied", func(t *testing.T) {
+		t.Parallel()
 		if runtime.GOOS == "windows" {
 			t.Skip("chmod doesn't work on Windows") // TODO: see if we can make a file unreadable
 		}
-
-		t.Parallel()
 
 		tmp := t.TempDir()
 		dir := join(tmp, "dir-unreadable")
@@ -451,7 +450,8 @@ func TestAdd(t *testing.T) {
 		}
 	})
 
-	t.Run("add same path twice", func(t *testing.T) {
+	// The second Add() should be a no-op
+	t.Run("add same dir twice", func(t *testing.T) {
 		tmp := t.TempDir()
 		w := newCollector(t)
 		if err := w.w.Add(tmp); err != nil {
@@ -469,6 +469,129 @@ func TestAdd(t *testing.T) {
 			create /file
 			remove /file
 		`))
+	})
+	t.Run("add same dir twice through symlink", func(t *testing.T) {
+		t.Parallel()
+		if isSolaris() {
+			t.Skip("broken: links are resolved and added twice") // TODO: should fix
+		}
+		if !internal.HasPrivilegesForSymlink() {
+			t.Skip("admin permissions required on Windows")
+		}
+
+		tmp := t.TempDir()
+		mkdir(t, tmp, "dir")
+		symlink(t, join(tmp, "dir"), tmp, "link")
+		w := newCollector(t)
+		if err := w.w.Add(join(tmp, "dir")); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.w.Add(join(tmp, "link")); err != nil {
+			t.Fatal(err)
+		}
+
+		w.collect(t)
+		touch(t, tmp, "dir/file")
+		rm(t, tmp, "dir/file")
+
+		cmpEvents(t, tmp, w.events(t), newEvents(t, `
+			create /dir/file
+			remove /dir/file
+		`))
+	})
+
+	t.Run("add same file twice", func(t *testing.T) {
+		t.Parallel()
+		tmp := t.TempDir()
+		touch(t, tmp, "file")
+
+		w := newCollector(t)
+		if err := w.w.Add(join(tmp, "file")); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.w.Add(join(tmp, "file")); err != nil {
+			t.Fatal(err)
+		}
+
+		w.collect(t)
+		echoAppend(t, "aaa", tmp, "file")
+		rm(t, tmp, "file")
+
+		cmpEvents(t, tmp, w.events(t), newEvents(t, `
+			write /file
+			remove /file
+
+			linux:
+				write /file
+				chmod /file
+				remove /file
+		`))
+	})
+	t.Run("add same file twice through symlink", func(t *testing.T) {
+		t.Parallel()
+		if isSolaris() {
+			t.Skip("broken: links are resolved and added twice") // TODO: should fix
+		}
+		if !internal.HasPrivilegesForSymlink() {
+			t.Skip("admin permissions required on Windows")
+		}
+
+		tmp := t.TempDir()
+		touch(t, tmp, "file")
+		symlink(t, join(tmp, "file"), tmp, "link")
+
+		w := newCollector(t)
+		if err := w.w.Add(join(tmp, "file")); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.w.Add(join(tmp, "link")); err != nil {
+			t.Fatal(err)
+		}
+
+		w.collect(t)
+		echoAppend(t, "aaa", tmp, "file")
+		rm(t, tmp, "file")
+
+		cmpEvents(t, tmp, w.events(t), newEvents(t, `
+			write /file
+			remove /file
+
+			linux:
+				write /file
+				chmod /file
+				remove /file
+		`))
+	})
+
+	t.Run("not reading events", func(t *testing.T) {
+		t.Parallel()
+
+		w := newWatcher(t)
+		defer func() { _ =w.Close()}()
+
+		tmp := t.TempDir()
+		mkdir(t, tmp, "/dir1")
+		mkdir(t, tmp, "/dir2")
+		addWatch(t, w, tmp, "/dir1")
+		addWatch(t, w, tmp, "/dir2")
+
+		{
+			have, want := w.WatchList(), []string{join(tmp, "/dir1"), join(tmp, "/dir2")}
+			sort.Strings(have)
+			if !reflect.DeepEqual(have, want) {
+				t.Errorf("\nhave: %s\nwant: %s", have, want)
+			}
+		}
+		if err := w.Remove(join(tmp, "/dir1")); err != nil {
+			t.Fatal(err)
+		}
+		{
+			have, want := w.WatchList(), []string{join(tmp, "/dir2")}
+			sort.Strings(have)
+			if !reflect.DeepEqual(have, want) {
+				t.Errorf("\nhave: %s\nwant: %s", have, want)
+			}
+		}
 	})
 }
 
@@ -520,6 +643,97 @@ func TestRemove(t *testing.T) {
 		}
 	})
 
+	t.Run("remove same dir twice through symlink", func(t *testing.T) {
+		t.Parallel()
+		if isSolaris() {
+			t.Skip("broken: links are resolved and added twice") // TODO: should fix
+		}
+		if !internal.HasPrivilegesForSymlink() {
+			t.Skip("admin permissions required on Windows")
+		}
+
+		tmp := t.TempDir()
+		mkdir(t, tmp, "dir")
+		symlink(t, join(tmp, "dir"), tmp, "link")
+
+		w := newWatcher(t)
+		defer func() { _ = w.Close()}()
+
+		addWatch(t, w, tmp, "dir")
+		addWatch(t, w, tmp, "link")
+
+		if err := w.Remove(join(tmp, "dir")); err != nil {
+			t.Fatal(err)
+		}
+		err := w.Remove(join(tmp, "link"))
+		if err == nil {
+			t.Fatal("no error")
+		}
+		if !errors.Is(err, ErrNonExistentWatch) {
+			t.Fatalf("wrong error: %T", err)
+		}
+	})
+
+	t.Run("remove same file twice", func(t *testing.T) {
+		t.Parallel()
+
+		tmp := t.TempDir()
+		touch(t, tmp, "file")
+
+		w := newWatcher(t)
+		defer func() { _ = w.Close()}()
+
+		addWatch(t, w, tmp, "file")
+
+		if err := w.Remove(join(tmp, "file")); err != nil {
+			t.Fatal(err)
+		}
+		err := w.Remove(join(tmp, "file"))
+		if err == nil {
+			t.Fatal("no error")
+		}
+		if !errors.Is(err, ErrNonExistentWatch) {
+			t.Fatalf("wrong error: %T", err)
+		}
+	})
+
+	t.Run("remove same file twice through symlink", func(t *testing.T) {
+		t.Parallel()
+		if isSolaris() {
+			t.Skip("broken: links are resolved and added twice") // TODO: should fix
+		}
+		if !internal.HasPrivilegesForSymlink() {
+			t.Skip("admin permissions required on Windows")
+		}
+		if runtime.GOOS == "windows" {
+			// TODO: I'm not sure if this is due to a problem in our code, or
+			// just a limitation of Windows, but very few people are using links
+			// in Windows and even fewer links to files, so whatever.
+			t.Skip("fails on Windows")
+		}
+
+		tmp := t.TempDir()
+		touch(t, tmp, "file")
+		symlink(t, join(tmp, "file"), tmp, "link")
+
+		w := newWatcher(t)
+		defer func() { _ = w.Close()}()
+
+		addWatch(t, w, tmp, "file")
+		addWatch(t, w, tmp, "link")
+
+		if err := w.Remove(join(tmp, "file")); err != nil {
+			t.Fatal(err)
+		}
+		err := w.Remove(join(tmp, "link"))
+		if err == nil {
+			t.Fatal("no error")
+		}
+		if !errors.Is(err, ErrNonExistentWatch) {
+			t.Fatalf("wrong error: %T", err)
+		}
+	})
+
 	// Make sure that concurrent calls to Remove() don't race.
 	t.Run("no race", func(t *testing.T) {
 		t.Parallel()
@@ -550,7 +764,7 @@ func TestRemove(t *testing.T) {
 	// Make sure file handles are correctly released.
 	//
 	// regression test for #42 see https://gist.github.com/timshannon/603f92824c5294269797
-	t.Run("", func(t *testing.T) {
+	t.Run("release file handles", func(t *testing.T) {
 		w := newWatcher(t)
 		defer func() { _ = w.Close() }()
 
@@ -822,21 +1036,130 @@ func BenchmarkAddRemove(b *testing.B) {
 	})
 }
 
-// Would panic on inotify: https://github.com/fsnotify/fsnotify/issues/616
-func TestRemoveRace(t *testing.T) {
-	t.Parallel()
+func TestRace(t *testing.T) {
+	// Would panic on inotify: https://github.com/peptoneltd/fsnotify/issues/616
+	t.Run("add and remove watches", func(t *testing.T) {
+		t.Parallel()
 
-	tmp := t.TempDir()
-	w := newCollector(t, tmp)
-	w.collect(t)
+		tmp := t.TempDir()
+		w := newCollector(t, tmp)
+		w.collect(t)
 
-	dir := join(tmp, "/dir")
-	for i := 0; i < 100; i++ {
-		go func() { _ = os.MkdirAll(dir, 0o0755) }()
-		go func() { _ = os.RemoveAll(dir) }()
-		go func() { _ = w.w.Add(dir) }()
-		go func() { _ = w.w.Remove(dir) }()
+		var (
+			dir = join(tmp, "/dir")
+			wg  sync.WaitGroup
+		)
+		wg.Add(400)
+		for i := 0; i < 100; i++ {
+			go func() { defer wg.Done(); _ = os.MkdirAll(dir, 0o0755) }()
+			go func() { defer wg.Done(); _ = os.RemoveAll(dir) }()
+			go func() { defer wg.Done(); _ = w.w.Add(dir) }()
+			go func() { defer wg.Done(); _ = w.w.Remove(dir) }()
+		}
+		wg.Wait()
+		w.stop(t)
+	})
+
+	// Race when deleting watched directory, creating it again, and re-adding
+	// it.
+	t.Run("remove self", func(t *testing.T) {
+		t.Parallel()
+
+		// TODO: seems to hang forever on Windows; possibly related to:
+		// https://github.com/peptoneltd/fsnotify/issues/656
+		//
+		// Although it seems to be on different points:
+		//
+		//   goroutine 8 [chan receive]:
+		//   github.com/peptoneltd/fsnotify.(*readDirChangesW).AddWith(0xc00002ea40, {0xc0000940f0, 0x48}, {0x0, 0x0, 0xaf2e7f?})
+		//           C:/Users/martin/fsnotify/backend_windows.go:141 +0x38d
+		//   github.com/peptoneltd/fsnotify.(*readDirChangesW).Add(0xc000092000?, {0xc0000940f0?, 0x1?})
+		//           C:/Users/martin/fsnotify/backend_windows.go:111 +0x1f
+		//   github.com/peptoneltd/fsnotify.(*Watcher).Add(...)
+		//           C:/Users/martin/fsnotify/fsnotify.go:313
+		//   github.com/peptoneltd/fsnotify.TestRace.func2(0xc000003a40)
+		//           C:/Users/martin/fsnotify/fsnotify_test.go:865 +0x1ee
+		//   testing.tRunner(0xc000003a40, 0xb71930)
+		//           C:/Program Files/Go/src/testing/testing.go:1792 +0xcb
+		//   created by testing.(*T).Run in goroutine 7
+		//           C:/Program Files/Go/src/testing/testing.go:1851 +0x3f6
+		//
+		//   goroutine 9 [select, locked to thread]:
+		//   github.com/peptoneltd/fsnotify.(*readDirChangesW).sendError(...)
+		//           C:/Users/martin/fsnotify/backend_windows.go:85
+		//   github.com/peptoneltd/fsnotify.(*readDirChangesW).startRead(0xc00002ea40, 0xc0001a4100)
+		//           C:/Users/martin/fsnotify/backend_windows.go:453 +0x319
+		//   github.com/peptoneltd/fsnotify.(*readDirChangesW).readEvents(0xc00002ea40)
+		//           C:/Users/martin/fsnotify/backend_windows.go:548 +0x290
+		//   created by github.com/peptoneltd/fsnotify.newBufferedBackend in goroutine 8
+		//           C:/Users/martin/fsnotify/backend_windows.go:55 +0x198
+		//
+		//   goroutine 18 [chan send]:
+		//   github.com/peptoneltd/fsnotify.(*eventCollector).collect.func1()
+		//           C:/Users/martin/fsnotify/helpers_test.go:436 +0x2cd
+		//   created by github.com/peptoneltd/fsnotify.(*eventCollector).collect in goroutine 8
+		//          C:/Users/martin/fsnotify/helpers_test.go:427 +0x67
+		//
+		// The Windows backend hasn't really changed in a long time, so old
+		// problem, and not something we need to fix right now.
+		if runtime.GOOS == "windows" {
+			t.Skip("hangs on windows")
+		}
+
+		// TODO: sometimes hands on "unix.Close(info.wd)" in kqueue.remove().
+		// Only seems to happen on macOS and not the other kqueue platforms.
+		//
+		// Just skip for now; want to rewrite kqueue backend anyway...
+		if runtime.GOOS == "darwin" {
+			t.Skip("hangs on macOS")
+		}
+
+		tmp := t.TempDir()
+		w := newCollector(t, tmp)
+		w.collect(t)
+
+		var (
+			dir = join(tmp, "/dir")
+			wg  sync.WaitGroup
+		)
+		w.w.Add(dir)
+		wg.Add(2000)
+		for i := 0; i < 1000; i++ {
+			go func() { defer wg.Done(); _ = os.RemoveAll(dir) }()
+			go func() { defer wg.Done(); _ = os.MkdirAll(dir, 0o0755) }()
+			w.w.Add(dir)
+		}
+		wg.Wait()
+		w.stop(t)
+	})
+}
+
+func TestNewWatcher(t *testing.T) {
+	w, err := NewWatcher()
+	if err != nil {
+		t.Fatal(err)
 	}
-	time.Sleep(100 * time.Millisecond)
-	w.stop(t)
+	defaultSz := 0
+	if runtime.GOOS == "windows" {
+		defaultSz = 50
+	}
+	if c := cap(w.Events); c != defaultSz {
+		t.Errorf("cap of NewWatcher() is not %d but %d", defaultSz, c)
+	}
+
+	w, err = NewBufferedWatcher(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := cap(w.Events); c != 0 {
+		t.Errorf("cap of NewWatcher() is not %d but %d", 0, c)
+	}
+
+	w, err = NewBufferedWatcher(42)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c := cap(w.Events); c != 42 {
+		t.Errorf("cap of NewWatcher() is not %d but %d", 42, c)
+	}
 }
