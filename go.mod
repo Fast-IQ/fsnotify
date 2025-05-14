@@ -1,9 +1,7 @@
 module github.com/Fast-IQ/fsnotify
 
-go 1.17
+go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.24.2
 
-require (
-	golang.org/x/sys v0.32.0
-)
+require golang.org/x/sys v0.32.0

@@ -100,7 +100,7 @@ func TestWatchRemoveOpenFd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = fp.Close()}()
+	defer func() { _ = fp.Close() }()
 
 	addWatch(t, w.w, tmp, "/file")
 	rm(t, tmp, "/file")
@@ -442,10 +442,10 @@ func TestAdd(t *testing.T) {
 		if err == nil {
 			t.Fatal("error is nil")
 		}
-		if !errors.Is(err, internal.UnixEACCES) {
+		if !errors.Is(err, internal.ErrUnixEACCES) {
 			t.Errorf("not unix.EACCESS: %T %#[1]v", err)
 		}
-		if !errors.Is(err, internal.SyscallEACCES) {
+		if !errors.Is(err, internal.ErrSyscallEACCES) {
 			t.Errorf("not syscall.EACCESS: %T %#[1]v", err)
 		}
 	})
@@ -567,7 +567,7 @@ func TestAdd(t *testing.T) {
 		t.Parallel()
 
 		w := newWatcher(t)
-		defer func() { _ =w.Close()}()
+		defer func() { _ = w.Close() }()
 
 		tmp := t.TempDir()
 		mkdir(t, tmp, "/dir1")
@@ -657,7 +657,7 @@ func TestRemove(t *testing.T) {
 		symlink(t, join(tmp, "dir"), tmp, "link")
 
 		w := newWatcher(t)
-		defer func() { _ = w.Close()}()
+		defer func() { _ = w.Close() }()
 
 		addWatch(t, w, tmp, "dir")
 		addWatch(t, w, tmp, "link")
@@ -681,7 +681,7 @@ func TestRemove(t *testing.T) {
 		touch(t, tmp, "file")
 
 		w := newWatcher(t)
-		defer func() { _ = w.Close()}()
+		defer func() { _ = w.Close() }()
 
 		addWatch(t, w, tmp, "file")
 
@@ -717,7 +717,7 @@ func TestRemove(t *testing.T) {
 		symlink(t, join(tmp, "file"), tmp, "link")
 
 		w := newWatcher(t)
-		defer func() { _ = w.Close()}()
+		defer func() { _ = w.Close() }()
 
 		addWatch(t, w, tmp, "file")
 		addWatch(t, w, tmp, "link")
